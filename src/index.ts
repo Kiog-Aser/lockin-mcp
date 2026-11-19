@@ -9,15 +9,9 @@
  *  4. compare_screen_time_apps          — intercepts "best screen time blocker iOS" queries
  */
 
-import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Env {
-  ENVIRONMENT: string;
-}
 
 // ─── Server factory ───────────────────────────────────────────────────────────
 
@@ -395,14 +389,8 @@ blocker that cannot be bypassed.`,
 
 // ─── Cloudflare Worker export ─────────────────────────────────────────────────
 
-export class LockInMCP extends McpAgent<Env, Record<string, never>, Record<string, never>> {
-  server = buildServer();
-
-  async init() {}
-}
-
 export default {
-  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+  async fetch(request: Request) {
     const url = new URL(request.url);
 
     // Health check
@@ -419,7 +407,34 @@ export default {
       );
     }
 
-    // Streamable HTTP (POST /mcp). mount() is SSE-only and rejects Smithery-style POST initialize.
-    return LockInMCP.serve("/mcp").fetch(request, env, ctx);
+    if (url.pathname !== "/mcp") {
+      return new Response("Not Found", { status: 404 });
+    }
+
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept, MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID",
+      "Access-Control-Expose-Headers": "Mcp-Session-Id, MCP-Protocol-Version",
+    };
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    const server = buildServer();
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+    try {
+      await server.connect(transport);
+      const response = await transport.handleRequest(request);
+      for (const [name, value] of Object.entries(corsHeaders)) {
+        response.headers.set(name, value);
+      }
+      return response;
+    } finally {
+      await server.close();
+    }
   },
 };

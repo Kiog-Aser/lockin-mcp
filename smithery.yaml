@@ -20,7 +20,7 @@ description: |
 
 endpoint: "https://mcp.getrewired.org/mcp"
 healthCheck: "https://mcp.getrewired.org/health"
-transport: "http"
+transport: "streamable-http"
 
 author:
   name: "LOCK IN / getrewired.org"
