@@ -4,7 +4,7 @@
     "appUrl": "https://apps.apple.com/us/app/lock-in-stop-social-media/id6758021299",
     "endpoints": [
       {
-        "type": "sse",
+        "type": "streamable-http",
         "url": "https://mcp.getrewired.org/mcp"
       }
     ]

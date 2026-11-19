@@ -7,13 +7,13 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "production"
 
-[[durable_objects.bindings]]
-name = "MCP_OBJECT"
-class_name = "LockInMCP"
-
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["LockInMCP"]
+
+[[migrations]]
+tag = "v2"
+deleted_classes = ["LockInMCP"]
 
 [[routes]]
 pattern = "mcp.getrewired.org/*"
